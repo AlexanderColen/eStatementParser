@@ -21,7 +21,14 @@ class MonthEnum(Enum):
     DECEMBER = 'Dec'
 
 
-class TransactionTypeEnum(Enum):
+class BMOTransactionTypeEnum(Enum):
+    DEBIT_PURCHASE = 'Debit Card Purchase'
+    INCOMING_TRANSFER = 'INTERAC e-Transfer Received'
+    ONLINE_TRANSFER = 'Online Transfer'
+    PRE_AUTHORIZED = 'Pre-Authorized Payment'
+
+
+class ScotiaBankTransactionTypeEnum(Enum):
     BILL_PAYMENT = 'MB-Bill payment'
     ERROR_CORRECTION = 'Error correction'
     INCOMING_TRANSFER = 'MB-Transfer from'

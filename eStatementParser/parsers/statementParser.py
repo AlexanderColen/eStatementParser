@@ -1,13 +1,18 @@
 from ..enums import BankEnum
+from decimal import Decimal
 from pathlib import Path
 
 import sys
 
 
 class StatementParser:
+    # Fields
     bank: BankEnum = None
     directory: str = ''
     path_list: list = []
+
+    # Constants
+    amount_regex_pattern = r'(\d+,)?\d+\.\d{2}'
 
     def __init__(self, directory: str, bank: BankEnum):
         self.bank = bank
@@ -22,4 +27,6 @@ class StatementParser:
             print(f'No PDF files were found in "{self.directory}".')
             sys.exit(0)
 
-    # TODO: Add method to store transaction(s).
+    @staticmethod
+    def convert_amount_to_decimal(value: str) -> Decimal:
+        return Decimal(value.replace(',', '').strip())

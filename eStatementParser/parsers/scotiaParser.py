@@ -1,5 +1,6 @@
-from ..enums import BankEnum, TransactionTypeEnum
+from ..enums import BankEnum, MonthEnum, ScotiaBankTransactionTypeEnum
 from .statementParser import StatementParser
+from .transaction import Transaction
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
@@ -40,8 +41,7 @@ class ScotiaParser(StatementParser):
             # Define some variables used to track how to parse next.
             start_parsing = False
             next_transaction_type = None
-            transaction_description = None
-            transaction_amount = None
+            transaction = None
 
             # Loop over text line-by-line while ignoring empty lines & newlines.
             for line in [line for line in raw_txt.split('\n') if line != '']:
@@ -51,31 +51,33 @@ class ScotiaParser(StatementParser):
                     start_parsing = line == 'deposited ($)'
                     continue
 
-                # TODO: Figure out why parsing is no chronological
+                # TODO: Figure out why parsing is not chronological
                 # print(f'Line: {line}')
                 # If the transaction type is not set, set what is coming next.
                 if next_transaction_type is None:
-                    for transaction_type in TransactionTypeEnum:
+                    for transaction_type in ScotiaBankTransactionTypeEnum:
                         if transaction_type.value in line:
                             next_transaction_type = transaction_type.value
-                            # print(f'MATCHED AS: {next_transaction_type}')
+                            transaction = Transaction()
+                            print(f'MATCHED AS: {next_transaction_type}')
                             break
                 # Otherwise
                 else:
-                    # print(f'Parsing as: {next_transaction_type}')
+                    print(f'Parsing as: {next_transaction_type}')
                     # Reset variables after parsing transaction finished.
-                    if transaction_amount is not None \
-                            and transaction_description is not None:
-                        print(f'Type: "{next_transaction_type}" | Description: "{transaction_description}" | Amount: {transaction_amount}')
-                        # TODO: Save transaction
+                    if transaction.is_complete():
+                        transaction.save()
+                        # Clear for next parse.
                         next_transaction_type = None
-                        transaction_amount = None
-                        transaction_description = None
                     else:
                         # Try to match on dollar amounts.
-                        if re.search(r'^(\d+,)?\d+\.\d+$', line):
-                            if transaction_amount is None:
-                                transaction_amount = float(line.replace(',', ''))
+                        if re.search(f'^{self.amount_regex_pattern}$', line):
+                            if Transaction.amount is None:
+                                Transaction.amount = float(line.replace(',', ''))
+                        elif line.startswith(tuple([month.value for month in MonthEnum])):
+                            if Transaction.posted_date is None:
+                                Transaction.posted_date = line
                         else:
-                            transaction_description = line
+                            Transaction.description = line
+                            Transaction.type = next_transaction_type
                         # TODO: Stop parsing when line matched 'Page X from X'?
